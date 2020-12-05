@@ -23,131 +23,117 @@ static uint16_t gray2rgb565[64]={
 
 float randomf(float minf, float maxf) {return minf + (rand()%(1UL << 31))*(maxf - minf) / (1UL << 31);}
 
+  uint16_t col[SCR];
+  
   #define SCL 4
   int lim = 128;
   int dirs = 9;
   int patt = 0;
-  int x, y, i, j, l;
   
-  uint16_t col[SCR];
   float pat[SCR];
-  float pnew[SCR];
+  float pnew[SCR];  
   float pmedian[SCR][SCL];
   float prange[SCR][SCL];
   float pvar[SCR][SCL];
+
+void rndrule(){
+
+  lim = 96 + rand()%96;
+  dirs = 6 + rand()%7;
+  patt = rand()%3;
   
+  for(int i=0; i<SCR; i++) pat[i] = randomf(0, 255.0f);
+ 
+}
 
-void setup()
-{
-    lcd.begin(15000000, COLOR_BLACK);
-    lcd.setRotation(2);
-    tft_write_command(INVERSION_DISPALY_ON);
+void setup(){
+  
+  lcd.begin(15000000, COLOR_BLACK);
+  lcd.setRotation(2);
+  tft_write_command(INVERSION_DISPALY_ON);
 
-    srand(read_cycle());
+  srand(read_cycle());
 
-    patt = rand()%3;
-    for(i=0; i<SCR; i++) pat[i] = randomf(0, 255.0f);
+  rndrule();
 
 }
 
-void loop()
-{
+void loop(){
 
   float R = randomf(0, TWO_PI);
-
   memcpy(pnew, pat, 4 * SCR);
 
-  for(j=0; j<SCL; j++)
-
-    for(i=0; i<SCR; i++) {
-
+  for(int j=0; j<SCL; j++){
+    for(int i=0; i<SCR; i++) {     
       pmedian[i][j] = 0;
       prange[i][j] = 0;
       pvar[i][j] = 0;
+    }
+  }
 
+  for(int i=0; i<SCL; i++) {
+
+    float d = (2<<i);
+
+    for(int j=0; j<dirs; j++) {
+      float dir = j * TWO_PI / dirs + R;
+      int dx = (d * cos(dir));
+      int dy = (d * sin(dir));     
+      for(int l=0; l<SCR; l++) {
+        int x1 = l%WIDTH + dx, y1 = l/WIDTH + dy;
+        if(x1<0) x1 = WIDTH-1-(-x1-1); if(x1>=WIDTH) x1 = x1%WIDTH;
+        if(y1<0) y1 = HEIGHT-1-(-y1-1); if(y1>=HEIGHT) y1 = y1%HEIGHT;
+        pmedian[l][i] += pat[x1+y1*WIDTH] / dirs;
+      }
     }
 
-    for(i=0; i<SCL; i++) {
-
-      float d = (2<<i);
-
-      for(j=0; j<dirs; j++) {
-
-        float dir = j*TWO_PI/dirs + R;
-        int dx = (d * cos(dir));
-        int dy = (d * sin(dir));
-        
-        for(l=0; l<SCR; l++) {
+    for(int j=0; j<dirs; j++) {
+      float dir = j * TWO_PI / dirs + R;
+      int dx = (d * cos(dir));
+      int dy = (d * sin(dir));
     
-          int x1 = l%WIDTH + dx, y1 = l/WIDTH + dy;
-          if(x1<0) x1 = WIDTH-1-(-x1-1); if(x1>=WIDTH) x1 = x1%WIDTH;
-          if(y1<0) y1 = HEIGHT-1-(-y1-1); if(y1>=HEIGHT) y1 = y1%HEIGHT;
-          pmedian[l][i] += pat[x1+y1*WIDTH] / dirs;
-
-        }
-      }
-
-      for(j=0; j<dirs; j++) {
-
-        float dir = j*TWO_PI/dirs + R;
-        int dx = (d * cos(dir));
-        int dy = (d * sin(dir));
-    
-        for(l=0; l<SCR; l++) {
-
-          int x1 = l%WIDTH + dx, y1 = l/WIDTH + dy;
-
-          if(x1<0) x1 = WIDTH-1-(-x1-1); if(x1>=WIDTH) x1 = x1%WIDTH;
-          if(y1<0) y1 = HEIGHT-1-(-y1-1); if(y1>=HEIGHT) y1 = y1%HEIGHT;
-
-          pvar[l][i] += fabs(pat[x1+y1*WIDTH] - pmedian[l][i]) / dirs;
-          prange[l][i] += pat[x1+y1*WIDTH] > (lim + i*10) ? +1.0f : -1.0f;
-
-        }
+      for(int l=0; l<SCR; l++) {
+        int x1 = l%WIDTH + dx, y1 = l/WIDTH + dy;
+        if(x1<0) x1 = WIDTH-1-(-x1-1); if(x1>=WIDTH) x1 = x1%WIDTH;
+        if(y1<0) y1 = HEIGHT-1-(-y1-1); if(y1>=HEIGHT) y1 = y1%HEIGHT;
+        pvar[l][i] += fabs(pat[x1+y1*WIDTH] - pmedian[l][i]) / dirs;
+        prange[l][i] += pat[x1+y1*WIDTH] > (lim + i*10) ? +1.0f : -1.0f;
       }
     }
+  }
 
-    for(l=0; l<SCR; l++) {
-
-      int imin = 0, imax = SCL;
-      float vmin = MAXFLOAT;
-      float vmax = -MAXFLOAT;
-
-      for(i=0; i<SCL; i+=1) {
-
-        if (pvar[l][i] <= vmin) { vmin = pvar[l][i]; imin = i; }
-        if (pvar[l][i] >= vmax) { vmax = pvar[l][i]; imax = i; }
-      
-      }
-
-      switch(patt){
-        case 0: for(i=0; i<=imin; i++)    pnew[l] += prange[l][i]; break;
-        case 1: for(i=imin; i<=imax; i++) pnew[l] += prange[l][i]; break;
-        case 2: for(i=imin; i<=imax; i++) pnew[l] += prange[l][i] + pvar[l][i] / 2.0f; break;
-      }
-
-    }
-
+  for(int l=0; l<SCR; l++) {
+    int imin = 0, imax = SCL;
     float vmin = MAXFLOAT;
     float vmax = -MAXFLOAT;
 
-    for(i=0; i<SCR; i++) {
-
-      vmin = min(vmin, pnew[i]);
-      vmax = max(vmax, pnew[i]);
-        
+    for(int i=0; i<SCL; i+=1) {
+      if(pvar[l][i] <= vmin) { vmin = pvar[l][i]; imin = i; }
+      if(pvar[l][i] >= vmax) { vmax = pvar[l][i]; imax = i; }
     }
 
-    float dv = vmax - vmin;
-        
-
-    for(i=0; i<SCR; i++){
-          
-      pat[i] = (pnew[i] - vmin) * 255 / dv;
-      col[i] = gray2rgb565[(uint16_t)pat[i]>>2];
-          
+    switch(patt){
+      case 0: for(int i=0; i<=imin; i++)    pnew[l] += prange[l][i]; break;
+      case 1: for(int i=imin; i<=imax; i++) pnew[l] += prange[l][i]; break;
+      case 2: for(int i=imin; i<=imax; i++) pnew[l] += prange[l][i] + pvar[l][i] / 2.0f; break;
     }
+  }
 
-    lcd.drawImage(0, 0, WIDTH, HEIGHT, (uint16_t*)col);
+  float vmin = MAXFLOAT;
+  float vmax = -MAXFLOAT;
+
+  for(int i=0; i<SCR; i++) {
+    vmin = min(vmin, pnew[i]);
+    vmax = max(vmax, pnew[i]);     
+  }
+
+  float dv = vmax - vmin;       
+
+  for(int i=0; i<SCR; i++){         
+    pat[i] = (pnew[i] - vmin) * 255.0f / dv;
+    col[i] = gray2rgb565[(uint16_t)pat[i]>>2];          
+  }
+  
+  lcd.drawImage(0, 0, WIDTH, HEIGHT, (uint16_t*)col);
 
 }
