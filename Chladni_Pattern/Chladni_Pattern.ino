@@ -1,4 +1,4 @@
-// Eye Candy patterns //
+// Chladni patterns //
 
 #include <Sipeed_ST7789.h>
 #include "lcd.h"
@@ -20,14 +20,11 @@ static uint16_t gray2rgb565[64]={
   0x18c6, 0x38c6, 0x59ce, 0x79ce, 0x9ad6, 0xbad6, 0xdbde, 0xfbde, 
   0x1ce7, 0x3ce7, 0x5def, 0x7def, 0x9ef7, 0xbef7, 0xdfff, 0xffff,
 };
-
-float randomf(float minf, float maxf) {return minf + (rand()%(1UL << 31))*(maxf - minf) / (1UL << 31);}
-
+  
   uint16_t col[SCR];
 
   float p[WIDTH][HEIGHT];
   float v[WIDTH][HEIGHT];
-  float a[WIDTH][HEIGHT];
 
   
 void setup(){
@@ -37,29 +34,27 @@ void setup(){
   tft_write_command(INVERSION_DISPALY_ON);
   
   srand(read_cycle());
-
-  for (int y = 1; y < HEIGHT-1; y=y+16) {
-    for (int x = 1; x < WIDTH-1; x=x+16) {
-      v[x][y] += ((2*PI) * randomf(-1.0f, 1.0f));
-    }
-  }
   
 }
 
 void loop(){
+
+  int frame = millis() / 40;
+
+  v[WIDTH/2][HEIGHT/2] = 0;
+  p[WIDTH/2][HEIGHT/2] = (sinf(frame * 0.01f) + sinf(frame * 0.1f)) * 8.0f;
   
   for (int y = 1; y < HEIGHT-1; y++) {
     for (int x = 1; x < WIDTH-1; x++) {
-      a[x][y] = (v[x-1][y] + v[x+1][y] + v[x][y-1] + v[x][y+1]) * 0.25f - v[x][y];
+      v[x][y] += (p[x-1][y] + p[x+1][y] + p[x][y-1] + p[x][y+1]) * 0.25f - p[x][y];
     }
   }
   
   for (int y = 1; y < HEIGHT-1; y++) {
     for (int x = 1; x < WIDTH-1; x++) {
-      v[x][y] += a[x][y];
       p[x][y] += v[x][y];
-      uint8_t coll = 64.0f * sinf(p[x][y]);
-      col[x+y*WIDTH] = gray2rgb565[coll%64];
+      uint8_t coll = 64.0f * (1.0f - fabs(constrain(v[x][y], -1.0f, 1.0f)));
+      col[x+y*WIDTH] = gray2rgb565[(uint8_t)coll%64];
     }
   }
 
