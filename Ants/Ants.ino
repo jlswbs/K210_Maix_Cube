@@ -31,7 +31,7 @@ void setup(){
   
   srand(read_cycle());
   
-  for (int c = 0; c < PARTICLES; c++) {
+  for (int c = 0; c < PARTICLES-1; c++) {
     x[c] = rand()%WIDTH;
     y[c] = rand()%HEIGHT;
   }
@@ -40,7 +40,7 @@ void setup(){
 
 void loop(){
 
-  if (c >= PARTICLES) c = 0;
+  if (c >= PARTICLES-1) c = 0;
 
   for (int a = 0; a < c; a++) {
     float ax = 0, ay = 0;
