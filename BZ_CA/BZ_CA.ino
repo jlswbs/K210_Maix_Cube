@@ -64,7 +64,7 @@ void loop(){
     }
   }
   
-  cells[rand()%WIDTH][rand()%HEIGHT] = rand()%2;  
+  cells[rand()%WIDTH][rand()%HEIGHT] = 1;  
       
   lcd.drawImage(0, 0, WIDTH, HEIGHT, (uint16_t*)col);
 
