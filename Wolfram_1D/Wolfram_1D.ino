@@ -12,8 +12,8 @@ Sipeed_ST7789 lcd(WIDTH, HEIGHT, spi_);
 
   uint16_t col[SCR];
   
-  bool state[SCR];
-  bool newst[SCR];
+  bool state[WIDTH];
+  bool newst[WIDTH];
 
   uint8_t k, x, y;
   uint16_t coll;
