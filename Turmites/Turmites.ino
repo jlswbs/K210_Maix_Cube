@@ -47,7 +47,7 @@ void rndrule(){
 
   for (int j=0; j < HEIGHT; j++){ for (int i = 0; i < WIDTH; i++) world[i][j]=0; } 
 
-  world[posx][posy] = rand()%100;
+  world[posx][posy] = rand()%4;
 
 }
 
