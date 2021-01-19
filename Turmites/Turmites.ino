@@ -20,7 +20,6 @@ Sipeed_ST7789 lcd(WIDTH, HEIGHT, spi_);
   int moves;
   int filled;
   int last_filled;
-  int current_diff;
   int current_col;
   int next_col[4][4];
   int next_state[4][4];
@@ -31,7 +30,6 @@ void rndrule(){
 
   state = rand()%4;
   filled = 0;
-  last_filled = 0;
   moves = 0;
   dir = 0;
   posx = WIDTH/2;
@@ -58,11 +56,6 @@ void move_turmite(){
   
   if((cols > 0) && (next_col[cols][state] == 0)) filled--;
   if((cols == 0) && (next_col[cols][state] > 0)) filled++;
-  
-  if((moves % 100) == 0){
-    current_diff = filled - last_filled;
-    last_filled = filled;
-  }
   
   oldposx = posx;
   oldposy = posy;
@@ -118,8 +111,6 @@ void loop(){
   }
 
   if((moves>1000) && (filled < 50)) rndrule();
-  if((moves>5000) && (filled < 500) && (current_diff == 0)) rndrule();
-  if((moves>20000) && (current_diff == 0) && (filled < 1000)) rndrule();
   
   lcd.drawImage(0, 0, WIDTH, HEIGHT, (uint16_t*)col);
   
