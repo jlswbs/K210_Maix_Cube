@@ -17,8 +17,6 @@ Sipeed_ST7789 lcd(WIDTH, HEIGHT, spi_);
   int state;
   int dir;
   int world[WIDTH][HEIGHT];
-  int moves;
-  int filled;
   int last_filled;
   int current_col;
   int next_col[4][4];
@@ -29,8 +27,6 @@ Sipeed_ST7789 lcd(WIDTH, HEIGHT, spi_);
 void rndrule(){
 
   state = rand()%4;
-  filled = 0;
-  moves = 0;
   dir = 0;
   posx = WIDTH/2;
   posy = HEIGHT/2;
@@ -51,11 +47,7 @@ void rndrule(){
 
 void move_turmite(){
   
-  moves ++;
   int cols = world[posx][posy];
-  
-  if((cols > 0) && (next_col[cols][state] == 0)) filled--;
-  if((cols == 0) && (next_col[cols][state] > 0)) filled++;
   
   oldposx = posx;
   oldposy = posy;
@@ -109,8 +101,6 @@ void loop(){
     }
     
   }
-
-  if((moves>1000) && (filled < 50)) rndrule();
   
   lcd.drawImage(0, 0, WIDTH, HEIGHT, (uint16_t*)col);
   
