@@ -3,12 +3,15 @@
 #include <Sipeed_ST7789.h>
 #include "lcd.h"
 
-#define WIDTH 240
-#define HEIGHT 240
-#define SCR (WIDTH * HEIGHT)
+#define WIDTH   120
+#define HEIGHT  120
+#define FULLW   240
+#define FULLH   240
+#define SCR     (WIDTH * HEIGHT)
+#define SCR2    (FULLW*FULLH)
 
 SPIClass spi_(SPI0);
-Sipeed_ST7789 lcd(WIDTH, HEIGHT, spi_);
+Sipeed_ST7789 lcd(FULLW, FULLH, spi_);
 
 static uint16_t gray2rgb565[64]={
   0x0000, 0x2000, 0x4108, 0x6108, 0x8210, 0xa210, 0xc318, 0xe318, 
@@ -23,7 +26,7 @@ static uint16_t gray2rgb565[64]={
 
 float randomf(float minf, float maxf) {return minf + (rand()%(1UL << 31))*(maxf - minf) / (1UL << 31);}
 
-  uint16_t col[SCR];
+  uint16_t col[SCR2];
   
   #define SCL 4
   int lim = 128;
@@ -61,24 +64,29 @@ void setup(){
 void loop(){
 
   float R = randomf(0, TWO_PI);
-  memcpy(pnew, pat, 4 * SCR);
-
+  memcpy(pnew, pat, 4*SCR);
+  
   for(int j=0; j<SCL; j++){
-    for(int i=0; i<SCR; i++) {     
+  
+    for(int i=0; i<SCR; i++) {
+    
       pmedian[i][j] = 0;
       prange[i][j] = 0;
       pvar[i][j] = 0;
+  
     }
   }
-
+      
   for(int i=0; i<SCL; i++) {
 
     float d = (2<<i);
 
     for(int j=0; j<dirs; j++) {
+          
       float dir = j * TWO_PI / dirs + R;
-      int dx = (d * cos(dir));
-      int dy = (d * sin(dir));     
+      int dx = (d * cosf(dir));
+      int dy = (d * sinf(dir));
+           
       for(int l=0; l<SCR; l++) {
         int x1 = l%WIDTH + dx, y1 = l/WIDTH + dy;
         if(x1<0) x1 = WIDTH-1-(-x1-1); if(x1>=WIDTH) x1 = x1%WIDTH;
@@ -89,8 +97,8 @@ void loop(){
 
     for(int j=0; j<dirs; j++) {
       float dir = j * TWO_PI / dirs + R;
-      int dx = (d * cos(dir));
-      int dy = (d * sin(dir));
+      int dx = (d * cosf(dir));
+      int dy = (d * sinf(dir));
     
       for(int l=0; l<SCR; l++) {
         int x1 = l%WIDTH + dx, y1 = l/WIDTH + dy;
@@ -127,13 +135,17 @@ void loop(){
     vmax = max(vmax, pnew[i]);     
   }
 
-  float dv = vmax - vmin;       
+  float dv = vmax - vmin;
 
-  for(int i=0; i<SCR; i++){         
-    pat[i] = (pnew[i] - vmin) * 255.0f / dv;
-    col[i] = gray2rgb565[(uint16_t)pat[i]>>2];          
+   for(int y=0; y<HEIGHT; y++) {
+    for(int x=0; x<WIDTH; x++){
+    
+      pat[x+y*WIDTH] = (pnew[x+y*WIDTH] - vmin) * 255.0f / dv;
+      col[(2*x)+(2*y)*FULLW] = gray2rgb565[(uint8_t)pat[x+y*WIDTH]>>2];   
+         
+    }    
   }
-  
-  lcd.drawImage(0, 0, WIDTH, HEIGHT, (uint16_t*)col);
+
+  lcd.drawImage(0, 0, FULLW, FULLH, (uint16_t*)col);
 
 }

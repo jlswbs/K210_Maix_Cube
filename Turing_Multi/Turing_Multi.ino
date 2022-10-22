@@ -1,11 +1,11 @@
-// Multi-Scale Turing Patterns // 
+// Multi scale Turing patterns // 
 
 #include <Sipeed_ST7789.h>
 #include "lcd.h"
 
-#define WIDTH 240
-#define HEIGHT 240
-#define SCR (WIDTH * HEIGHT)
+#define WIDTH   240
+#define HEIGHT  240
+#define SCR     (WIDTH * HEIGHT)
 
 SPIClass spi_(SPI0);
 Sipeed_ST7789 lcd(WIDTH, HEIGHT, spi_);
@@ -22,34 +22,29 @@ static uint16_t gray2rgb565[64]={
 };
 
   float randomf(float minf, float maxf) {return minf + (rand()%(1UL << 31))*(maxf - minf) / (1UL << 31);}
-
   float sinus[7] = { 0, sinf(TWO_PI/1.0f), sinf(TWO_PI/2.0f),  sinf(TWO_PI/3.0f),  sinf(TWO_PI/4.0f),  sinf(TWO_PI/5.0f),  sinf(TWO_PI/6.0f) };
   float cosinus[7] = { 0, cosf(TWO_PI/1.0f), cosf(TWO_PI/2.0f),  cosf(TWO_PI/3.0f),  cosf(TWO_PI/4.0f),  cosf(TWO_PI/5.0f),  cosf(TWO_PI/6.0f) };
 
-  int level, radius, i, x, y;
-  int blurlevels, symmetry;
   uint16_t col[SCR];
+  int level, levels, radius;
+  int blurlevels, symmetry;
   float base;
-  int levels;
   float stepScale;
   float stepOffset;
   float blurFactor;
-
-  int radii[WIDTH];
+  uint8_t radii[WIDTH];
   float stepSizes[WIDTH];
-
   float grid[SCR];
   float blurBuffer[SCR];
-  float variation[SCR];
   float bestVariation[SCR];
-  int bestLevel[SCR];
+  uint8_t bestLevel[SCR];
   bool direction[SCR];
-
   float activator[SCR];
   float inhibitor[SCR];
   float swap[SCR];
 
-int getSymmetry(int i, int w, int h) {
+int getSymmetry(int i, int w, int h){
+  
   if(symmetry <= 1) return i;
   if(symmetry == 2) return SCR - 1 - i;
   int x1 = i % w;
@@ -60,9 +55,10 @@ int getSymmetry(int i, int w, int h) {
   int y2 = h/2 + (int)(dx * -sinus[symmetry] + dy * cosinus[symmetry]);
   int j = x2 + y2 * w;
   return j<0 ? j+SCR : j>=SCR ? j-SCR : j;
+  
 }
     
-void rndrule() {
+void rndrule(){
 
   symmetry = rand()%7;
   base = randomf(1.5f, 2.4f);
@@ -73,18 +69,17 @@ void rndrule() {
   levels = (int) (log(max(WIDTH,HEIGHT)) / logf(base)) - 1.0f;
   blurlevels = (int) max(0, (levels+1) * blurFactor - 0.5f);
 
-  for (i = 0; i < levels; i++) {
+  for (int i = 0; i < levels; i++) {
     int radius = (int)powf(base, i);
     radii[i] = radius;
     stepSizes[i] = logf(radius) * stepScale + stepOffset;
   }
 
-  for (i = 0; i < SCR; i++) grid[i] = randomf(-1.0f, 1.0f);
+  for (int i = 0; i < SCR; i++) grid[i] = randomf(-1.0f, 1.0f);
 
 } 
 
-void setup()
-{
+void setup(){
     
   lcd.begin(15000000, COLOR_BLACK);
   lcd.setRotation(2);
@@ -98,7 +93,7 @@ void setup()
 
 void loop(){
    
-  if(symmetry >= 1) for(i = 0; i < SCR; i++) grid[i] = grid[i] * 0.9f + grid[getSymmetry(i, WIDTH, HEIGHT)] * 0.1f;
+  if(symmetry >= 1) for(int i = 0; i < SCR; i++) grid[i] = grid[i] * 0.9f + grid[getSymmetry(i, WIDTH, HEIGHT)] * 0.1f;
    
   memcpy(activator, grid, 4*SCR);
 
@@ -108,8 +103,8 @@ void loop(){
 
     if(level <= blurlevels){
         
-      for (y = 0; y < HEIGHT; y++) {
-        for (x = 0; x < WIDTH; x++) {
+      for (int y = 0; y < HEIGHT; y++) {
+        for (int x = 0; x < WIDTH; x++) {
           int t = y * WIDTH + x;
           if (y == 0 && x == 0) blurBuffer[t] = activator[t];
           else if (y == 0) blurBuffer[t] = blurBuffer[t - 1] + activator[t];
@@ -118,9 +113,9 @@ void loop(){
         }
       }
     }
-    
-    for (y = 0; y < HEIGHT; y++) {
-      for (x = 0; x < WIDTH; x++) {
+
+    for (int y = 0; y < HEIGHT; y++) {
+      for (int x = 0; x < WIDTH; x++) {
         int minx = max(0, x - radius);
         int maxx = min(x + radius, WIDTH - 1);
         int miny = max(0, y - radius);
@@ -137,7 +132,7 @@ void loop(){
       }
     }
         
-    for (i = 0; i < SCR; i++) {
+    for (int i = 0; i < SCR; i++) {
       float variation = fabs(activator[i] - inhibitor[i]);
       if (level == 0 || variation < bestVariation[i]) {
         bestVariation[i] = variation;
@@ -147,11 +142,11 @@ void loop(){
     }
 
     if(level==0) {
-      memcpy(activator, inhibitor, 4*SCR);
+      memcpy(activator, inhibitor, sizeof(activator));
     } else {
-      memcpy(swap, activator, 4*SCR);
-      memcpy(activator, inhibitor, 4*SCR);
-      memcpy(inhibitor, swap, 4*SCR);
+      memcpy(swap, activator, sizeof(swap));
+      memcpy(activator, inhibitor, sizeof(activator));
+      memcpy(inhibitor, swap, sizeof(inhibitor));
     }
             
   }
@@ -159,7 +154,7 @@ void loop(){
   float smallest = MAXFLOAT;
   float largest = -MAXFLOAT;
 
-  for (i = 0; i < SCR; i++) {
+  for (int i = 0; i < SCR; i++) {
     float curStep = stepSizes[bestLevel[i]];
     if (direction[i])grid[i] += curStep;
     else grid[i] -= curStep;
@@ -169,9 +164,9 @@ void loop(){
 
   float range = (largest - smallest) / 2.0f;
   
-  for (i = 0; i < SCR; i++){ 
+  for (int i = 0; i < SCR; i++){ 
     grid[i] = ((grid[i] - smallest) / range) - 1.0f;
-    uint16_t coll = 32.0f + (32.0f * grid[i]);
+    uint8_t coll = 32.0f + (31.0f * grid[i]);
     col[i] = gray2rgb565[coll%64];
   }
 
